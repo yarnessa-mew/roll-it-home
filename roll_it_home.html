@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Roll It Home</title>
+    <style>
+        :root {
+            --bg-color: #fdf6e3;
+            --text-color: #5c4a3d;
+            --board-bg: #f4ebd8;
+            --line-color: #e0d5c1;
+            --btn-bg: #ffb6c1;
+            --btn-active: #ff9fb0;
+            --ball-color: #ff1493;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 700;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            max-width: 600px;
+        }
+
+        /* --- Screens --- */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+        .screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* --- Start Screen --- */
+        #start-screen h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--ball-color);
+            text-shadow: 2px 3px 0px #ffe4e1;
+            margin-bottom: 15px;
+            text-align: center;
+            line-height: 1.1;
+        }
+        #start-screen p {
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 0 20px;
+            max-width: 450px;
+            margin-bottom: 40px;
+            color: #7a6b5d;
+        }
+        .huge-btn {
+            background-color: var(--btn-bg);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 20px 50px;
+            font-size: 1.8rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 6px 0 var(--btn-active), 0 10px 15px rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .huge-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 var(--btn-active), 0 4px 5px rgba(0,0,0,0.1);
+        }
+
+        /* --- Game Screen --- */
+        #game-screen {
+            z-index: 5;
+            justify-content: flex-start;
+            padding-top: env(safe-area-inset-top, 10px);
+            outline: none;
+        }
+
+        #header {
+            width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .header-left, .header-right { display: flex; flex-direction: column; }
+        .header-right { align-items: flex-end; }
+        .score-text { font-size: 1.4rem; font-weight: 900; color: var(--ball-color); }
+        .round-text { font-size: 1.1rem; }
+        .board-count { font-size: 0.9rem; color: #a09282; }
+        .moves-text { font-size: 1.1rem; background: #fff; padding: 4px 12px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        #board-wrapper {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 4px 0;
+        }
+
+        #board-container {
+            width: min(86vw, calc(100dvh - 245px), 420px);
+            height: min(86vw, calc(100dvh - 245px), 420px);
+            min-width: 240px;
+            min-height: 240px;
+            position: relative;
+            background-color: var(--board-bg);
+            border-radius: 15px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.02), 0 10px 20px rgba(0,0,0,0.05);
+            touch-action: none; /* Crucial for preventing mobile scroll on swipe */
+            overflow: hidden;
+        }
+
+        #grid-bg {
+            position: absolute; width: 100%; height: 100%;
+            display: grid;
+        }
+        .grid-cell {
+            border-right: 1px solid var(--line-color);
+            border-bottom: 1px solid var(--line-color);
+        }
+        .grid-cell.patrol-track {
+            background-color: rgba(44, 62, 80, 0.06);
+            box-shadow: inset 0 0 0 2px rgba(44, 62, 80, 0.08);
+        }
+
+        #board-container {
+            width: min(86vw, calc(100dvh - 250px), 420px);
+            height: min(86vw, calc(100dvh - 250px), 420px);
+            min-width: 210px;
+            min-height: 210px;
+            position: relative;
+            background-color: var(--board-bg);
+            border-radius: 15px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.02), 0 10px 20px rgba(0,0,0,0.05);
+            touch-action: none; /* Crucial for preventing mobile scroll on swipe */
+            overflow: hidden;
+        }
+
+        #grid-bg {
+            position: absolute; width: 100%; height: 100%;
+            display: grid;
+        }
+        .grid-cell {
+            border-right: 1px solid var(--line-color);
+            border-bottom: 1px solid var(--line-color);
+        }
+        .grid-cell.patrol-track {
+            background-color: rgba(44, 62, 80, 0.06);
+            box-shadow: inset 0 0 0 2px rgba(44, 62, 80, 0.08);
+        }
+
+        #trail-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
+        }
+
+        #entities {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        .entity {
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            will-change: transform, left, top;
+        }
+        
+        .entity.patroller {
+            transition: left 0.3s ease-in-out, top 0.3s ease-in-out;
+        }
+        
+        .svg-container { width: 85%; height: 85%; position: relative; }
+        .ball-svg-container { width: 65%; height: 65%; z-index: 15; }
+        
+        /* --- Controls --- */
+        #controls-area {
+            width: 100%;
+            padding: 4px 20px max(12px, env(safe-area-inset-bottom, 12px));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 20;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 48px);
+            grid-template-rows: repeat(3, 48px);
+            gap: 5px;
+            justify-content: center;
+        }
+        .d-btn {
+            appearance: none;
+            -webkit-appearance: none;
+            padding: 0;
+            margin: 0;
+            width: 48px;
+            height: 48px;
+            background-color: #fff;
+            border: 2px solid var(--line-color);
+            border-radius: 14px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.4rem;
+            line-height: 1;
+            color: var(--text-color);
+            cursor: pointer;
+            box-shadow: 0 3px 0 var(--line-color);
+            transition: transform 0.08s, box-shadow 0.08s, background-color 0.08s;
+            touch-action: manipulation;
+        }
+        .d-btn:active, .d-btn.key-pressed { transform: translateY(3px); box-shadow: 0 0 0 var(--line-color); background-color: #f0f0f0; }
+        .d-up { grid-column: 2; grid-row: 1; }
+        .d-left { grid-column: 1; grid-row: 2; }
+        .d-right { grid-column: 3; grid-row: 2; }
+        .d-down { grid-column: 2; grid-row: 3; }
+
+        .action-btn {
+            background-color: #8fbca1;
+            color: white; border: none; border-radius: 18px;
+            padding: 11px 36px; font-size: 1.05rem;
+            box-shadow: 0 4px 0 #739d84;
+            cursor: pointer; transition: all 0.1s;
+        }
+        .action-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #739d84; }
+        #end-screen p { font-size: 1.2rem; margin-bottom: 30px; }
+        #kitten-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px; margin-bottom: 40px; width: 100%; max-width: 450px;
+        }
+        .kitten-portrait {
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .kitten-portrait svg { width: 55px; height: 55px; }
+        .kitten-portrait span { font-size: 0.85rem; margin-top: 5px; }
+
+        /* --- Animations --- */
+        @keyframes squishX { 0% { transform: scale(1,1); } 50% { transform: scale(1.4, 0.6); } 100% { transform: scale(1,1); } }
+        @keyframes squishY { 0% { transform: scale(1,1); } 50% { transform: scale(0.6, 1.4); } 100% { transform: scale(1,1); } }
+        .anim-squish-x .ball-svg-container { animation: squishX 0.2s ease-out; }
+        .anim-squish-y .ball-svg-container { animation: squishY 0.2s ease-out; }
+
+        @keyframes wobble { 0% { transform: rotate(0deg); } 25% { transform: rotate(-15deg); } 75% { transform: rotate(15deg); } 100% { transform: rotate(0deg); } }
+        .anim-wobble .svg-container { animation: wobble 0.3s ease-in-out; }
+
+        @keyframes pounce { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-20px) scale(1.1) rotate(-5deg); } 60% { transform: translateY(-20px) scale(1.1) rotate(5deg); } 100% { transform: translateY(0) scale(1); } }
+        .anim-pounce .svg-container { animation: pounce 0.5s ease; }
+        
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .vacuum-light { animation: blink 0.75s infinite; }
+
+        @keyframes kittenBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+        .rider-kitten { animation: kittenBob 0.75s ease-in-out infinite; }
+
+        .heart {
+            position: absolute; width: 20px; height: 20px; z-index: 30;
+            background-color: var(--ball-color);
+            transform: rotate(-45deg);
+            animation: floatUp 1s ease-in forwards;
+        }
+        .heart::before, .heart::after {
+            content: ""; position: absolute; width: 20px; height: 20px;
+            background-color: var(--ball-color); border-radius: 50%;
+        }
+        .heart::before { top: -10px; left: 0; }
+        .heart::after { top: 0; left: 10px; }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) rotate(-45deg) scale(0.5); }
+            100% { opacity: 0; transform: translateY(-50px) rotate(-45deg) scale(1.5); }
+        }
+
+        .hidden-svg { display: none; }
+    </style>
+</head>
+<body>
+
+    <svg class="hidden-svg">
+        <defs>
+            <g id="svg-ball">
+                <circle cx="50" cy="50" r="45" fill="var(--ball-color)"/>
+                <path d="M20 30 Q50 80 80 40 M30 70 Q60 20 90 60 M40 20 Q40 80 60 80" stroke="#ff85c6" stroke-width="6" fill="none" stroke-linecap="round"/>
+            </g>
+            <g id="svg-box">
+                <rect x="10" y="20" width="80" height="70" fill="#a67c52" rx="8"/>
+                <rect x="5" y="15" width="90" height="25" fill="#8b5a2b" rx="5"/>
+                <line x1="50" y1="40" x2="50" y2="90" stroke="#5c3a21" stroke-width="4"/>
+                <path d="M35 60 L65 60 M40 80 L60 80" stroke="#7a5230" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <g id="svg-pot">
+                <polygon points="20 40, 80 40, 70 95, 30 95" fill="#cd5c5c"/>
+                <rect x="10" y="20" width="80" height="20" fill="#e9967a" rx="5"/>
+                <circle cx="50" cy="15" r="22" fill="#2e8b57"/>
+                <circle cx="30" cy="10" r="15" fill="#3cb371"/>
+                <circle cx="70" cy="10" r="15" fill="#3cb371"/>
+                <line x1="30" y1="50" x2="70" y2="50" stroke="#b22222" stroke-width="3"/>
+            </g>
+            <g id="svg-stool">
+                <rect x="25" y="45" width="14" height="45" fill="#8b4513" rx="4"/>
+                <rect x="61" y="45" width="14" height="45" fill="#8b4513" rx="4"/>
+                <ellipse cx="50" cy="45" rx="45" ry="28" fill="#4682b4"/>
+                <ellipse cx="50" cy="35" rx="45" ry="28" fill="#5c99c6"/>
+                <path d="M20 35 Q50 15 80 35" stroke="#a0c4de" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </g>
+            <g id="svg-vacuum">
+                <ellipse cx="50" cy="66" rx="43" ry="30" fill="#1f2d3d"/>
+                <ellipse cx="50" cy="62" rx="43" ry="30" fill="#2c3e50"/>
+                <ellipse cx="50" cy="62" rx="33" ry="22" fill="#34495e"/>
+                <path d="M 16 72 A 40 26 0 0 0 84 72" stroke="#7f8c8d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                <circle cx="50" cy="82" r="4.5" fill="#2ecc71" class="vacuum-light"/>
+            </g>
+        </defs>
+    </svg>
+
+    <div id="app">
+        <div id="start-screen" class="screen">
+            <h1>Roll It<br>Home</h1>
+            <p>Roll the yarn to the kitten! Wait for roaming vacuums to clear a path, or bounce off them to turn!</p>
+            <button class="huge-btn" onclick="startGame()">Start</button>
+        </div>
+
+        <div id="game-screen" class="screen hidden" tabindex="0">
+            <div id="header">
+                <div class="header-left">
+                    <div class="score-text">Score: <span id="ui-score">0</span></div>
+                    <div class="round-text">Round <span id="ui-round">1</span></div>
+                    <div class="board-count">Board <span id="ui-board-num">1</span> of <span id="ui-board-total">3</span></div>
+                </div>
+                <div class="header-right">
+                    <div class="moves-text">Moves: <span id="ui-moves">0</span> · Best: <span id="ui-par">0</span></div>
+                </div>
+            </div>
+
+            <div id="board-wrapper">
+                <div id="board-container">
+                    <div id="grid-bg"></div>
+                    <svg id="trail-layer"></svg>
+                    <div id="entities"></div>
+                </div>
+            </div>
+
+            <div id="controls-area">
+                <div class="d-pad">
+                    <button type="button" tabindex="-1" class="d-btn d-up" id="btn-up" aria-label="Roll up">▲</button>
+                    <button type="button" tabindex="-1" class="d-btn d-left" id="btn-left" aria-label="Roll left">◀</button>
+                    <button type="button" tabindex="-1" class="d-btn d-right" id="btn-right" aria-label="Roll right">▶</button>
+                    <button type="button" tabindex="-1" class="d-btn d-down" id="btn-down" aria-label="Roll down">▼</button>
+                </div>
+                <button type="button" tabindex="-1" class="action-btn" onclick="restartLevel()">Start over</button>
+            </div>
+        </div>
+
+        <div id="end-screen" class="screen hidden">
+            <h2>Prrrfect!</h2>
+            <p>Score: <span id="ui-final-score">0</span> / 24</p>
+            <p>All twelve kittens are happily playing with their yarn! Prrr...</p>
+            <div id="kitten-grid"></div>
+            <button class="huge-btn" style="margin-top: 20px; padding: 15px 40px; font-size: 1.5rem;" onclick="resetGameFull()">Play again</button>
+        </div>
+    </div>
+
+<script>
+    // --- Data & Initialization ---
+    const kittens = [
+        {name:'Pepper', color:'#4a4a4a'}, {name:'Biscuit', color:'#d2b48c'}, {name:'Mochi', color:'#f8f8f8'},
+        {name:'Clementine', color:'#f28500'}, {name:'Dot', color:'#222222'}, {name:'Waffles', color:'#e5a822'},
+        {name:'Pickles', color:'#a38a6a'}, {name:'Juniper', color:'#6c7a89'}, {name:'Noodle', color:'#e3c565'},
+        {name:'Marmalade', color:'#ffb347'}, {name:'Figgy', color:'#4b382a'}, {name:'Tofu', color:'#f5f5dc'}
+    ];
+
+    // --- Core Logic & Solvers ---
+    // Refactored to map perfectly: x = column, y = row
+    function findPar(size, bx, by, kx, ky, obstacles, patrollers) {
+        let queue = [{x: bx, y: by, dist: 0}];
+        let visited = new Set([`${bx},${by}`]);
+        let dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // dx, dy
+
+        let patrollerCells = new Set();
+        patrollers.forEach(p => p.path.forEach(cell => patrollerCells.add(`${cell.x},${cell.y}`)));
+
+        while(queue.length > 0) {
+            let curr = queue.shift();
+
+            for(let d of dirs) {
+                let nx = curr.x, ny = curr.y;
+                let validStops = [];
+
+                while(true) {
+                    let nextX = nx + d[0], nextY = ny + d[1];
+
+                    // Hit wall or static obstacle
+                    if(nextX < 0 || nextX >= size || nextY < 0 || nextY >= size ||
+                       obstacles.some(o => o.x === nextX && o.y === nextY)) {
+                        validStops.push({x: nx, y: ny});
+                        break;
+                    }
+
+                    // Catch condition
+                    if(nextX === kx && nextY === ky) {
+                        validStops.push({x: nextX, y: nextY});
+                        break;
+                    }
+
+                    // Passed through patroller's path (timing possibility)
+                    if(patrollerCells.has(`${nextX},${nextY}`)) {
+                        validStops.push({x: nx, y: ny}); 
+                    }
+
+                    nx = nextX; ny = nextY;
+                }
+
+                for(let stop of validStops) {
+                    if (stop.x === kx && stop.y === ky) return curr.dist + 1;
+
+                    if (stop.x !== curr.x || stop.y !== curr.y) {
+                        let key = `${stop.x},${stop.y}`;
+                        if(!visited.has(key)) {
+                            visited.add(key);
+                            queue.push({x: stop.x, y: stop.y, dist: curr.dist + 1});
+                        }
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    function generateBoard(round, boardIndex) {
+        let size = round === 1 ? 7 : (round === 2 ? 9 : 11);
+        let parMin = round === 1 ? 2 : (round === 2 ? 3 : 4);
+        let parMax = round === 1 ? 3 : (round === 2 ? 5 : 7);
+        
+        let targetObsCount = Math.floor(size * size * 0.35); // 35% obstacle density
+        let targetPatrollers = round === 1 ? 2 : (round === 2 ? 3 : 4);
+
+        let attempts = 0;
+        while(attempts < 10000) {
+            attempts++;
+            let kx = Math.floor(Math.random()*size), ky = Math.floor(Math.random()*size);
+            let bx = Math.floor(Math.random()*size), by = Math.floor(Math.random()*size);
+            
+            // Start points shouldn't be too close
+            if(Math.abs(kx-bx) + Math.abs(ky-by) < 3) continue;
+
+            let obstacles = [];
+            let patrollers = [];
+            let grid = Array(size).fill(0).map(() => Array(size).fill(0));
+            grid[ky][kx] = 1; // Mark occupied (using row(y), col(x) for arrays)
+            grid[by][bx] = 1;
+
+            // 1. Generate Vacuums (Patrollers) - retry until targetPatrollers are placed
+            let pIdCounter = 0;
+            let pTries = 0;
+            while(patrollers.length < targetPatrollers && pTries < 40) {
+                pTries++;
+                let px = Math.floor(Math.random()*size), py = Math.floor(Math.random()*size);
+                if(grid[py][px]) continue;
+
+                let isHoriz = Math.random() < 0.5;
+                let pathLength = Math.random() < 0.5 ? 2 : 3;
+                let path = [];
+                let valid = true;
+
+                for(let step=0; step<pathLength; step++) {
+                    let x = px + (isHoriz ? step : 0);
+                    let y = py + (isHoriz ? 0 : step);
+                    if(x >= size || y >= size || grid[y][x]) { valid = false; break; }
+                    path.push({x, y});
+                }
+
+                if(valid && path.length >= 2) {
+                    path.forEach(cell => grid[cell.y][cell.x] = 2);
+                    patrollers.push({ id: pIdCounter++, path, currIdx: 0, dir: 1 });
+                }
+            }
+            if(patrollers.length < targetPatrollers) continue;
+
+            // 2. Generate Static Obstacles
+            let currentObs = patrollers.reduce((sum, p) => sum + p.path.length, 0);
+            while(currentObs < targetObsCount) {
+                let ox = Math.floor(Math.random()*size), oy = Math.floor(Math.random()*size);
+                if(!grid[oy][ox]) {
+                    grid[oy][ox] = 3;
+                    obstacles.push({x: ox, y: oy, type: Math.floor(Math.random()*3)});
+                    currentObs++;
+                } else {
+                    if (Math.random() < 0.05) break; 
+                }
+            }
+
+            let par = findPar(size, bx, by, kx, ky, obstacles, patrollers);
+            // Must be solvable, strictly greater than 1 move, and within bounds
+            if(par >= parMin && par <= parMax) {
+                return {size, bx, by, kx, ky, obstacles, patrollers, par, kitten: kittens[boardIndex]};
+            }
+        }
+        
+        // Failsafe generator (extremely unlikely to hit)
+        return {
+            size, bx:0, by:0, kx:size-1, ky:size-1, 
+            obstacles:[{x:0, y:size-2, type:0}], 
+            patrollers: [{id: 0, path: [{x:0,y:2}, {x:1,y:2}], currIdx: 0, dir: 1}], 
+            par: 2, kitten: kittens[boardIndex]
+        };
+    }
+
+    // --- State ---
+    let state = {
+        boardIndex: 0, 
+        score: 0,
+        moves: 0,
+        board: null,
+        ball: { x: 0, y: 0 },
+        isRolling: false,
+        trailNodes: []
+    };
+    
+    let patrolTimer = null;
+
+    const getRoundInfo = (idx) => {
+        if(idx < 3) return { round: 1, current: idx + 1, total: 3 };
+        if(idx < 7) return { round: 2, current: idx - 3 + 1, total: 4 };
+        return { round: 3, current: idx - 7 + 1, total: 5 };
+    };
+
+    // --- DOM Elements ---
+    const screens = { start: document.getElementById('start-screen'), game: document.getElementById('game-screen'), end: document.getElementById('end-screen') };
+    const ui = { score: document.getElementById('ui-score'), round: document.getElementById('ui-round'), boardNum: document.getElementById('ui-board-num'), boardTotal: document.getElementById('ui-board-total'), moves: document.getElementById('ui-moves'), par: document.getElementById('ui-par'), finalScore: document.getElementById('ui-final-score') };
+    const els = { gridBg: document.getElementById('grid-bg'), trailLayer: document.getElementById('trail-layer'), entities: document.getElementById('entities'), boardContainer: document.getElementById('board-container'), boardWrapper: document.getElementById('board-wrapper') };
+
+    let ballEl, kittenEl;
+
+    // Keep board square sized strictly within available wrapper space so D-pad & Down button never clip
+    function fitBoard() {
+        if (!els.boardWrapper || !els.boardContainer) return;
+        const rect = els.boardWrapper.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        const size = Math.max(180, Math.min(rect.width - 20, rect.height - 8, 430));
+        els.boardContainer.style.width = `${Math.floor(size)}px`;
+        els.boardContainer.style.height = `${Math.floor(size)}px`;
+    }
+
+    if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(fitBoard).observe(els.boardWrapper);
+    }
+    window.addEventListener('resize', fitBoard);
+
+    // --- UI Flow ---
+    function showScreen(name) {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens[name].classList.remove('hidden');
+        if (name === 'game') {
+            requestAnimationFrame(fitBoard);
+        }
+    }
+
+    function startGame() {
+        state.boardIndex = 0; state.score = 0;
+        if (document.activeElement) document.activeElement.blur();
+        showScreen('game');
+        window.focus();
+        screens.game.focus();
+        loadLevel();
+    }
+
+    function resetGameFull() { startGame(); }
+
+    function loadLevel() {
+        if(state.boardIndex >= 12) { endGame(); return; }
+
+        stopPatrols();
+        const ri = getRoundInfo(state.boardIndex);
+        state.board = generateBoard(ri.round, state.boardIndex);
+        state.moves = 0;
+        state.ball.x = state.board.bx; state.ball.y = state.board.by;
+        state.isRolling = false;
+        state.trailNodes = [{ cx: (state.ball.x + 0.5) * (100 / state.board.size), cy: (state.ball.y + 0.5) * (100 / state.board.size) }];
+
+        ui.score.innerText = state.score; ui.round.innerText = ri.round;
+        ui.boardNum.innerText = ri.current; ui.boardTotal.innerText = ri.total;
+        ui.moves.innerText = state.moves; ui.par.innerText = state.board.par;
+
+        renderBoard();
+        startPatrols();
+    }
+
+    function restartLevel() {
+        if (state.isRolling) return;
+        if (document.activeElement) document.activeElement.blur();
+        screens.game.focus();
+        state.ball.x = state.board.bx; state.ball.y = state.board.by;
+        
+        state.trailNodes = [{ cx: (state.ball.x + 0.5) * (100 / state.board.size), cy: (state.ball.y + 0.5) * (100 / state.board.size) }];
+        els.trailLayer.innerHTML = '';
+        positionElement(ballEl, state.ball.x, state.ball.y);
+    }
+
+    function endGame() {
+        stopPatrols();
+        ui.finalScore.innerText = state.score;
+        const grid = document.getElementById('kitten-grid');
+        grid.innerHTML = '';
+        kittens.forEach(k => {
+            grid.innerHTML += `<div class="kitten-portrait">${getKittenSVG(k.color)}<span>${k.name}</span></div>`;
+        });
+        showScreen('end');
+    }
+
+    // --- Rendering ---
+    function getKittenSVG(color) {
+        return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+            <ellipse cx="50" cy="85" rx="45" ry="12" fill="#ffe4e1" stroke="#ffb6c1" stroke-width="2"/>
+            <path d="M 25 80 C 20 40, 80 40, 75 80 Z" fill="${color}"/>
+            <circle cx="50" cy="45" r="22" fill="${color}"/>
+            <polygon points="35 30, 25 10, 45 25" fill="${color}"/>
+            <polygon points="65 30, 75 10, 55 25" fill="${color}"/>
+            <polygon points="35 28, 28 15, 42 25" fill="#ffb6c1"/>
+            <polygon points="65 28, 72 15, 58 25" fill="#ffb6c1"/>
+            <circle cx="42" cy="45" r="3" fill="#222"/>
+            <circle cx="58" cy="45" r="3" fill="#222"/>
+            <path d="M 48 50 Q 50 53 52 50" stroke="#222" stroke-width="2" fill="none"/>
+            <circle cx="50" cy="50" r="1.5" fill="#ffb6c1"/>
+        </svg>`;
+    }
+
+    function getRoombaKittenSVG(color) {
+        return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+            <!-- Floor shadow under the rolling disc -->
+            <ellipse cx="50" cy="76" rx="46" ry="20" fill="rgba(0,0,0,0.18)"/>
+            <!-- Spinning side sweeper bristles -->
+            <line x1="12" y1="74" x2="3" y2="80" stroke="#95a5a6" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="14" y1="77" x2="7" y2="85" stroke="#95a5a6" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Roomba rolling disc body & bumper -->
+            <ellipse cx="50" cy="70" rx="46" ry="23" fill="#1b2631"/>
+            <ellipse cx="50" cy="65" rx="46" ry="23" fill="#2c3e50" stroke="#1b2631" stroke-width="2"/>
+            <!-- Metallic top plate & inner ring -->
+            <ellipse cx="50" cy="64" rx="37" ry="17" fill="#465c71"/>
+            <ellipse cx="50" cy="64" rx="28" ry="12.5" fill="#5d758c"/>
+            <!-- Front bumper seam & glowing Roomba CLEAN LED -->
+            <path d="M 10 71 A 44 21 0 0 0 90 71" stroke="#85929e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <circle cx="50" cy="79" r="5" fill="#1e272e"/>
+            <circle cx="50" cy="79" r="3.5" fill="#2ecc71" class="vacuum-light"/>
+            <!-- Cute kitten riding on top of the Roomba disc -->
+            <g class="rider-kitten">
+                <path d="M 65 55 Q 80 48 77 37" stroke="${color}" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+                <path d="M 35 58 C 33 38, 67 38, 65 58 Z" fill="${color}"/>
+                <circle cx="50" cy="34" r="15" fill="${color}"/>
+                <polygon points="39 24, 33 10, 46 20" fill="${color}"/>
+                <polygon points="61 24, 67 10, 54 20" fill="${color}"/>
+                <polygon points="39 22, 35 13, 44 20" fill="#ffb6c1"/>
+                <polygon points="61 22, 65 13, 56 20" fill="#ffb6c1"/>
+                <circle cx="44.5" cy="34" r="2.2" fill="#222"/>
+                <circle cx="55.5" cy="34" r="2.2" fill="#222"/>
+                <circle cx="45.2" cy="33.3" r="0.8" fill="#fff"/>
+                <circle cx="56.2" cy="33.3" r="0.8" fill="#fff"/>
+                <path d="M 48 38 Q 50 40.5 52 38" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+                <circle cx="50" cy="37.5" r="1.4" fill="#ffb6c1"/>
+                <ellipse cx="43" cy="58" rx="4.2" ry="2.8" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+                <ellipse cx="57" cy="58" rx="4.2" ry="2.8" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+            </g>
+        </svg>`;
+    }
+
+    function renderBoard() {
+        const size = state.board.size;
+        const pct = 100 / size;
+        
+        const patrolSet = new Set();
+        state.board.patrollers.forEach(p => p.path.forEach(c => patrolSet.add(`${c.x},${c.y}`)));
+
+        els.gridBg.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        els.gridBg.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+        els.gridBg.innerHTML = Array.from({length: size * size}).map((_, i) => {
+            const cx = i % size;
+            const cy = Math.floor(i / size);
+            const isTrack = patrolSet.has(`${cx},${cy}`) ? ' patrol-track' : '';
+            return `<div class="grid-cell${isTrack}"></div>`;
+        }).join('');
+
+        els.trailLayer.innerHTML = ''; els.entities.innerHTML = '';
+
+        // Static Obstacles
+        state.board.obstacles.forEach((obs) => {
+            const el = document.createElement('div');
+            el.className = 'entity';
+            el.style.width = `${pct}%`; el.style.height = `${pct}%`;
+            el.id = `obs-${obs.x}-${obs.y}`;
+            let svgId = ['svg-box', 'svg-pot', 'svg-stool'][obs.type];
+            el.innerHTML = `<div class="svg-container"><svg viewBox="0 0 100 100" width="100%" height="100%"><use href="#${svgId}"/></svg></div>`;
+            positionElement(el, obs.x, obs.y);
+            els.entities.appendChild(el);
+        });
+
+        // Vacuums (Patrollers) with kittens riding on top
+        const riderColors = kittens
+            .map(k => k.color)
+            .filter(c => c !== state.board.kitten.color);
+        state.board.patrollers.forEach((p, idx) => {
+            const el = document.createElement('div');
+            el.className = 'entity patroller';
+            el.style.width = `${pct}%`; el.style.height = `${pct}%`;
+            el.id = `patroller-${p.id}`;
+            const riderColor = riderColors[(state.boardIndex + idx) % riderColors.length];
+            el.innerHTML = `<div class="svg-container">${getRoombaKittenSVG(riderColor)}</div>`;
+            let cell = p.path[p.currIdx];
+            positionElement(el, cell.x, cell.y);
+            els.entities.appendChild(el);
+        });
+
+        // Kitten
+        kittenEl = document.createElement('div');
+        kittenEl.className = 'entity';
+        kittenEl.style.width = `${pct}%`; kittenEl.style.height = `${pct}%`;
+        kittenEl.innerHTML = `<div class="svg-container">${getKittenSVG(state.board.kitten.color)}</div>`;
+        positionElement(kittenEl, state.board.kx, state.board.ky);
+        els.entities.appendChild(kittenEl);
+
+        // Ball
+        ballEl = document.createElement('div');
+        ballEl.className = 'entity ball-container';
+        ballEl.style.width = `${pct}%`; ballEl.style.height = `${pct}%`;
+        ballEl.innerHTML = `<div class="ball-svg-container"><svg viewBox="0 0 100 100" width="100%" height="100%"><use href="#svg-ball"/></svg></div>`;
+        positionElement(ballEl, state.ball.x, state.ball.y);
+        els.entities.appendChild(ballEl);
+    }
+
+    function positionElement(el, x, y) {
+        el.style.left = `${(x / state.board.size) * 100}%`; 
+        el.style.top = `${(y / state.board.size) * 100}%`;
+    }
+
+    // --- Mechanics ---
+    function startPatrols() {
+        if(patrolTimer) clearInterval(patrolTimer);
+        patrolTimer = setInterval(tickPatrols, 750);
+    }
+    
+    function stopPatrols() {
+        if(patrolTimer) clearInterval(patrolTimer);
+        patrolTimer = null;
+    }
+    
+    function tickPatrols() {
+        if (state.isRolling) return; // Prevent vacs from clipping ball while rolling
+        state.board.patrollers.forEach(p => {
+            p.currIdx += p.dir;
+            if(p.currIdx >= p.path.length - 1 || p.currIdx <= 0) {
+                p.currIdx = Math.max(0, Math.min(p.path.length - 1, p.currIdx));
+                p.dir *= -1;
+            }
+            let el = document.getElementById(`patroller-${p.id}`);
+            let cell = p.path[p.currIdx];
+            positionElement(el, cell.x, cell.y);
+        });
+    }
+
+    function simulateRollGameplay(size, obstacles, patrollers, x, y, dx, dy, kx, ky) {
+        let nx = x, ny = y;
+        let hitStaticCoord = null, hitPatrollerData = null;
+
+        while(true) {
+            let nextX = nx + dx, nextY = ny + dy;
+
+            // Boundaries
+            if(nextX < 0 || nextX >= size || nextY < 0 || nextY >= size) break;
+            
+            // Static obstacles
+            if(obstacles.some(o => o.x === nextX && o.y === nextY)) { 
+                hitStaticCoord = {x: nextX, y: nextY}; 
+                break; 
+            }
+
+            // Real-time position of vacuums
+            let hitP = patrollers.find(p => p.path[p.currIdx].x === nextX && p.path[p.currIdx].y === nextY);
+            if(hitP) { 
+                hitPatrollerData = {x: nextX, y: nextY, id: hitP.id}; 
+                break; 
+            }
+
+            nx = nextX; ny = nextY;
+            if(nx === kx && ny === ky) return { x: nx, y: ny, hitKitten: true };
+        }
+        return { 
+            x: nx, y: ny, hitKitten: false, 
+            hitWall: (!hitStaticCoord && !hitPatrollerData), 
+            hitStaticCoord, hitPatrollerData 
+        };
+    }
+
+    // Explicitly mapping roll(dx, dy) where dx is horizontal change, dy is vertical
+    function roll(dx, dy) {
+        if (state.isRolling) return;
+        
+        let sim = simulateRollGameplay(
+            state.board.size, state.board.obstacles, state.board.patrollers, 
+            state.ball.x, state.ball.y, dx, dy, state.board.kx, state.board.ky
+        );
+        
+        if (sim.x === state.ball.x && sim.y === state.ball.y) {
+            // Give a gentle bump squish so the player gets immediate feedback when blocked
+            if (ballEl) {
+                const squishClass = dx !== 0 ? 'anim-squish-x' : 'anim-squish-y';
+                ballEl.classList.remove('anim-squish-x', 'anim-squish-y');
+                void ballEl.offsetWidth;
+                ballEl.classList.add(squishClass);
+                setTimeout(() => ballEl.classList.remove(squishClass), 200);
+            }
+            return;
+        }
+
+        state.isRolling = true;
+        stopPatrols(); // Freeze vacs during rapid slide
+        
+        state.moves++;
+        ui.moves.innerText = state.moves;
+
+        animateRoll(sim.x, sim.y, dx, dy, sim.hitKitten, sim.hitWall, sim.hitStaticCoord, sim.hitPatrollerData);
+    }
+
+    function animateRoll(targetX, targetY, dx, dy, hitKitten, hitWall, hitStaticCoord, hitPatrollerData) {
+        const size = state.board.size;
+        const startPctX = (state.ball.x / size) * 100, startPctY = (state.ball.y / size) * 100;
+        const endPctX = (targetX / size) * 100, endPctY = (targetY / size) * 100;
+        
+        const dist = Math.abs(targetX - state.ball.x) + Math.abs(targetY - state.ball.y);
+        const duration = Math.max(150, dist * 40); 
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        const startNode = state.trailNodes[state.trailNodes.length - 1];
+        line.setAttribute('x1', `${startNode.cx}%`); line.setAttribute('y1', `${startNode.cy}%`);
+        line.setAttribute('x2', `${startNode.cx}%`); line.setAttribute('y2', `${startNode.cy}%`);
+        line.setAttribute('stroke', 'var(--ball-color)'); line.setAttribute('stroke-width', '4');
+        line.setAttribute('stroke-linecap', 'round');
+        els.trailLayer.appendChild(line);
+
+        let startTime = null;
+
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / duration, 1);
+            const currentX = startPctX + (endPctX - startPctX) * progress;
+            const currentY = startPctY + (endPctY - startPctY) * progress;
+            
+            ballEl.style.left = `${currentX}%`; ballEl.style.top = `${currentY}%`;
+
+            const centerPctX = currentX + (50 / size), centerPctY = currentY + (50 / size);
+            line.setAttribute('x2', `${centerPctX}%`); line.setAttribute('y2', `${centerPctY}%`);
+
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                finishRoll(targetX, targetY, centerPctX, centerPctY, dx, dy, hitKitten, hitWall, hitStaticCoord, hitPatrollerData);
+            }
+        }
+        requestAnimationFrame(step);
+    }
+
+    function finishRoll(targetX, targetY, finalCx, finalCy, dx, dy, hitKitten, hitWall, hitStaticCoord, hitPatrollerData) {
+        state.ball.x = targetX; state.ball.y = targetY;
+        state.trailNodes.push({cx: finalCx, cy: finalCy});
+
+        if (hitKitten) { handleWin(); return; }
+
+        let effectDuration = 0;
+        if (hitWall || hitStaticCoord || hitPatrollerData) {
+            effectDuration = 200;
+            // Squish on impact
+            if (dx !== 0) ballEl.classList.add('anim-squish-x'); 
+            else ballEl.classList.add('anim-squish-y');
+            
+            setTimeout(() => ballEl.classList.remove('anim-squish-x', 'anim-squish-y'), effectDuration);
+
+            // Wobble hit object
+            if (hitStaticCoord) {
+                const obsEl = document.getElementById(`obs-${hitStaticCoord.x}-${hitStaticCoord.y}`);
+                if (obsEl) { obsEl.classList.add('anim-wobble'); setTimeout(() => obsEl.classList.remove('anim-wobble'), 300); }
+            } else if (hitPatrollerData) {
+                const obsEl = document.getElementById(`patroller-${hitPatrollerData.id}`);
+                if (obsEl) { obsEl.classList.add('anim-wobble'); setTimeout(() => obsEl.classList.remove('anim-wobble'), 300); }
+            }
+        }
+
+        setTimeout(() => { state.isRolling = false; startPatrols(); }, effectDuration);
+    }
+
+    function handleWin() {
+        kittenEl.classList.add('anim-pounce');
+        for(let i=0; i<3; i++) {
+            setTimeout(() => {
+                let heart = document.createElement('div'); heart.className = 'heart';
+                const kx = (state.board.kx + 0.5) * (100 / state.board.size);
+                const ky = (state.board.ky + 0.5) * (100 / state.board.size);
+                heart.style.left = `calc(${kx}% + ${(Math.random() - 0.5) * 30}px)`; heart.style.top = `calc(${ky}% - 20px)`;
+                els.entities.appendChild(heart);
+                setTimeout(() => heart.remove(), 1000);
+            }, i * 200);
+        }
+
+        const points = (state.moves <= state.board.par) ? 2 : 1;
+        state.score += points; ui.score.innerText = state.score;
+
+        setTimeout(() => { state.boardIndex++; loadLevel(); }, 1500);
+    }
+
+    // --- Input Listeners ---
+    function flashDpadButton(btnId) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.classList.add('key-pressed');
+        setTimeout(() => btn.classList.remove('key-pressed'), 140);
+    }
+
+    function bindDpadControls() {
+        const controls = [
+            { id: 'btn-up', dx: 0, dy: -1 },
+            { id: 'btn-down', dx: 0, dy: 1 },
+            { id: 'btn-left', dx: -1, dy: 0 },
+            { id: 'btn-right', dx: 1, dy: 0 }
+        ];
+        controls.forEach(({ id, dx, dy }) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            let lastTriggered = 0;
+            const triggerDir = (e) => {
+                const now = performance.now();
+                if (now - lastTriggered < 80) return;
+                lastTriggered = now;
+                if (e && e.cancelable) e.preventDefault();
+                flashDpadButton(id);
+                roll(dx, dy);
+                if (!screens.game.classList.contains('hidden')) {
+                    screens.game.focus();
+                }
+            };
+            btn.addEventListener('pointerdown', triggerDir);
+            btn.addEventListener('click', triggerDir);
+        });
+    }
+    bindDpadControls();
+
+    // Keep focus inside the game container so arrow keys always register in embedded previews
+    window.addEventListener('pointerdown', () => {
+        window.focus();
+        if (!screens.game.classList.contains('hidden')) {
+            setTimeout(() => screens.game.focus(), 0);
+        }
+    });
+
+    // Keyboard Input: Capture phase on both window & document + multi-property key matching
+    function handleDirectionKey(e) {
+        if (e._rollItHomeHandled) return;
+        const key = e.key;
+        const code = e.code;
+        const keyCode = e.keyCode || e.which;
+
+        const isUp = key === 'ArrowUp' || key === 'Up' || code === 'ArrowUp' || keyCode === 38 || key === 'w' || key === 'W' || code === 'KeyW';
+        const isDown = key === 'ArrowDown' || key === 'Down' || code === 'ArrowDown' || keyCode === 40 || key === 's' || key === 'S' || code === 'KeyS';
+        const isLeft = key === 'ArrowLeft' || key === 'Left' || code === 'ArrowLeft' || keyCode === 37 || key === 'a' || key === 'A' || code === 'KeyA';
+        const isRight = key === 'ArrowRight' || key === 'Right' || code === 'ArrowRight' || keyCode === 39 || key === 'd' || key === 'D' || code === 'KeyD';
+
+        if (isUp || isDown || isLeft || isRight) {
+            e._rollItHomeHandled = true;
+            if (e.cancelable) e.preventDefault();
+            e.stopPropagation();
+        } else {
+            return;
+        }
+
+        if (screens.game.classList.contains('hidden') || state.isRolling) return;
+        
+        if (isUp) { flashDpadButton('btn-up'); roll(0, -1); }
+        else if (isDown) { flashDpadButton('btn-down'); roll(0, 1); }
+        else if (isLeft) { flashDpadButton('btn-left'); roll(-1, 0); }
+        else if (isRight) { flashDpadButton('btn-right'); roll(1, 0); }
+    }
+    window.addEventListener('keydown', handleDirectionKey, { capture: true });
+    document.addEventListener('keydown', handleDirectionKey, { capture: true });
+
+    // Touch / Swipe Input
+    let touchStartX = 0, touchStartY = 0;
+    
+    els.boardContainer.addEventListener('touchstart', e => { 
+        touchStartX = e.changedTouches[0].screenX; 
+        touchStartY = e.changedTouches[0].screenY; 
+    }, {passive: true});
+
+    // Crucial to prevent iOS/Android screen scrolling while trying to swipe the board
+    els.boardContainer.addEventListener('touchmove', e => { 
+        e.preventDefault(); 
+    }, { passive: false });
+
+    els.boardContainer.addEventListener('touchend', e => {
+        if(screens.game.classList.contains('hidden') || state.isRolling) return;
+        let dx = e.changedTouches[0].screenX - touchStartX;
+        let dy = e.changedTouches[0].screenY - touchStartY;
+        
+        if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
+            if (Math.abs(dx) > Math.abs(dy)) {
+                roll(Math.sign(dx), 0);
+            } else {
+                roll(0, Math.sign(dy));
+            }
+        }
+    });
+</script>
+</body>
+</html>
